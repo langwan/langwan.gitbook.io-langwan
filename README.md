@@ -432,3 +432,10 @@ Percentage of the requests served within a certain time (ms)
   99%      1
  100%      8 (longest request)
 ```
+
+### 配套代码和视频
+
+代码地址 [https://github.com/langwan/chihuo/blob/main/go%E8%AF%AD%E8%A8%80/Go%E8%AF%AD%E8%A8%80Web%20Server%E5%AE%9E%E7%8E%B0](https://github.com/langwan/chihuo/blob/main/go%E8%AF%AD%E8%A8%80/Go%E8%AF%AD%E8%A8%80Web%20Server%E5%AE%9E%E7%8E%B0)
+
+{% embed url="https://www.bilibili.com/video/BV1Jd4y147hi/?share_source=copy_web&vd_source=934149a9d52713966455c630fcbcc964" %}
+
