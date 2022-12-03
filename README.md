@@ -1,4 +1,4 @@
-# Copy of Go语言Web Server实现
+# 语言Web Server实现
 
 ### Go的第三方Web库
 

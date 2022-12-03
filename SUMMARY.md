@@ -2,7 +2,7 @@
 
 ## 文章
 
-* [Copy of Go语言Web Server实现](README.md)
+* [语言Web Server实现](README.md)
 * [拷贝文件的彩色进度条](wen-zhang/kao-bei-wen-jian-de-cai-se-jin-du-tiao.md)
 * [并发分片文件下载](wen-zhang/bing-fa-fen-pian-wen-jian-xia-zai.md)
 * [大文件转HTTP下载服务](wen-zhang/da-wen-jian-zhuan-http-xia-zai-fu-wu.md)
