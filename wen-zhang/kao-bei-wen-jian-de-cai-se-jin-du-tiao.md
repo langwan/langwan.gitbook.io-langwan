@@ -1,6 +1,6 @@
 # 拷贝文件的彩色进度条
 
-<figure><img src=".gitbook/assets/output (1).gif" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/output (1).gif" alt=""><figcaption></figcaption></figure>
 
 ### 系统默认的 io.copy
 
