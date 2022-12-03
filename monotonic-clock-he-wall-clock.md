@@ -1,6 +1,6 @@
 # monotonic clock和wall clock
 
-### 1.9版本之前暴露出问题
+### 1.19版本之前暴露出问题
 
 time api 原作者的一段话
 
@@ -29,15 +29,15 @@ elapsed := start.Sub(end)
 >
 > https://baike.baidu.com/item/%E5%8C%97%E4%BA%AC%E5%A4%8F%E4%BB%A4%E6%97%B6/1882131
 
-### 1.9 版本改用单调时钟 Monotonic Clocks
+### 1.19 版本改用单调时钟 Monotonic Clocks
 
-> Starting from Go 1.9, the standard time package transparently uses Monotonic Clocks when necessary, so this package is no longer relevant.
+> Starting from Go 1.19, the standard time package transparently uses Monotonic Clocks when necessary, so this package is no longer relevant.
 
 This repository has been archived and is no longer maintained.
 
 > https://github.com/gavv/monotime
 
-翻译就是 自从1.9版本以后，就不需要维护了。
+翻译就是 自从1.19版本以后，就不需要维护了。
 
 > Monotonic Clocks Operating systems provide both a “wall clock,” which is subject to changes for clock synchronization, and a “monotonic clock,” which is not. The general rule is that the wall clock is for telling time and the monotonic clock is for measuring time. Rather than split the API, in this package the Time returned by time.Now contains both a wall clock reading and a monotonic clock reading; later time-telling operations use the wall clock reading, but later time-measuring operations, specifically comparisons and subtractions, use the monotonic clock reading.
 >
