@@ -139,7 +139,7 @@ func (srv *Server) Serve(l net.Listener) error {
 ```
 {% endcode %}
 
-#### ### 实现一个 http 服务器
+#### 实现一个 http 服务器
 
 #### client
 
