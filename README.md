@@ -8,6 +8,8 @@
 
 #### 一般语言实现
 
+c 语言去实现一个简单的http server并不难，但如果要保持高性能，例如nginx自己做了所有的一切，并不是很容易。你需要去管理连接，并采用合理的io模型和策略。下面是一个最基本的流程。
+
 ```mermaid
 sequenceDiagram
     participant Client
@@ -26,6 +28,8 @@ sequenceDiagram
         end
     end
 ```
+
+服务器端的工作主要是listen()和accept()连接，然后进入到交互过程，最终close()连接。
 
 #### go语言实现
 
@@ -47,9 +51,13 @@ sequenceDiagram
     end
 ```
 
+服务器端和c语言差不多，客户端省掉了一个bind()过程，合并成Dial()，翻译成中文为拨号。
+
 ### 实现代码
 
-gin 和 beego 都调用了net库下的net/http/server下的Serve()方法实现HTTP服务器，因此如果我们的代码与该方法一致或者做了精简，那么理论上性能是一致的。
+#### gin 和 beego 是怎样实现的
+
+我们先看看gin 和 beego都做了什么 它们都调用了net库下的net/http/server下的Serve()方法实现HTTP服务器，因此如果我们的代码与该方法一致或者做了精简，那么理论上性能是一致的。并没有做更多的额外的优化和处理。
 
 {% code title="net/http/server Serve()" %}
 ```go
@@ -131,7 +139,7 @@ func (srv *Server) Serve(l net.Listener) error {
 ```
 {% endcode %}
 
-
+#### ### 实现一个 http 服务器
 
 #### client
 
@@ -236,19 +244,19 @@ func resp(conn net.Conn, body []byte) {
 
 ```
 
+server端与net/http/server下的Serve()方法几乎相同，只是做了更大的精简，核心是for + Accept() + goroutine。
 
+go语言的_goroutine_本身就有极高的性能，因此替代了c语言自己去实现connections pool的麻烦，简单调用就可以实现很高的性能。
 
 ### 性能测试
 
-使用ab做一个简单的性能测试，不是很严谨，但足够说明问题
-
-对比图
+使用ab做一个简单的性能测试，不是很严谨，但足够说明问题。我们看一个最终结果的对比图，没有本质上的差别大概都在每秒3万次左右。（并发20，总请求是10000次）
 
 |                     | server   | gin server | beego server |
 | ------------------- | -------- | ---------- | ------------ |
 | Requests per second | 30682.19 | 33626.22   | 32875.27     |
 
-#### 自实现的web server
+#### 测试在实现的 web server
 
 ```shell
 langwan@Langwan-Mini meterun % ab -n 10000 -c 20 http://127.0.0.1:8100/profile
@@ -307,7 +315,7 @@ Percentage of the requests served within a certain time (ms)
  100%      9 (longest request)
 ```
 
-#### gin web server
+#### 测试 gin web server
 
 ```shell
 langwan@Langwan-Mini meterun % ab -n 10000 -c 20 http://127.0.0.1:8100/profile
@@ -366,7 +374,7 @@ Percentage of the requests served within a certain time (ms)
  100%      3 (longest request)
 ```
 
-#### beego web server
+#### 测试 beego web server
 
 ```shell
 langwan@Langwan-Mini meterun % ab -n 10000 -c 20 http://127.0.0.1:8100/profile
