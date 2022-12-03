@@ -2,7 +2,7 @@
 
 ### Go的第三方Web库
 
-在Go语言当中有很多知名的Web服务，例如[gin](https://github.com/gin-gonic/gin)和[beego](https://github.com/beego/beego)，在它们的描述中都提到了`high-performance`，我们的文章会从最原始的socket来实现一个简单的web服务器。
+在Go语言当中有很多知名的Web服务，例如[gin](https://github.com/gin-gonic/gin)和[beego](https://github.com/beego/beego)，在它们的描述中都提到了`high-performance`，我们的文章会从最原始的socket来实现一个简单的web服务器。实现的服务与gin、beego做一次性能对比，对比工具使用ab（我们只做了一个不严肃的性能测试，我们只能去做个人能做的事情）。
 
 ### Go语言TCP服务的原理
 
@@ -49,10 +49,9 @@ sequenceDiagram
 
 ### 实现代码
 
-#### gin和beego的代码片段
+gin 和 beego 都调用了net库下的net/http/server下的Serve()方法实现HTTP服务器，因此如果我们的代码与该方法一致或者做了精简，那么理论上性能是一致的。
 
-
-
+{% code title="net/http/server Serve()" %}
 ```go
 // Serve accepts incoming connections on the Listener l, creating a
 // new service goroutine for each. The service goroutines read requests and
@@ -130,8 +129,9 @@ func (srv *Server) Serve(l net.Listener) error {
 	}
 }
 ```
+{% endcode %}
 
-使用go来实现的最简代码
+
 
 #### client
 
@@ -159,4 +159,268 @@ func main() {
 	}
 	fmt.Println(string(buf[:rn]))
 }
+```
+
+#### server
+
+```go
+package main
+
+import (
+	"bufio"
+	"fmt"
+	"net"
+	"os"
+	"strings"
+)
+
+type handler func(conn net.Conn)
+
+var handlers = make(map[string]handler)
+
+func main() {
+	get("/profile", func(conn net.Conn) {
+		data, err := os.ReadFile("./html/profile.html")
+		if err != nil {
+			return
+		}
+		resp(conn, data)
+	})
+	get("/home", func(conn net.Conn) {
+		data, err := os.ReadFile("./html/home.html")
+		if err != nil {
+			return
+		}
+		resp(conn, data)
+	})
+	listen, err := net.Listen("tcp", ":8100")
+	if err != nil {
+		panic(err)
+	}
+	for {
+		conn, err := listen.Accept()
+		if err != nil {
+			panic(err)
+		}
+		go serve(conn)
+	}
+}
+
+func serve(conn net.Conn) {
+	for {
+		message, err := bufio.NewReader(conn).ReadString('\n')
+		if err != nil {
+			break
+		}
+	
+		message = strings.TrimSpace(message)
+		if strings.HasPrefix(message, "GET ") {
+			sp := strings.Split(message, " ")
+			if handler, ok := handlers[sp[1]]; ok {
+				handler(conn)
+				conn.Close()
+			}
+		}
+	
+	}
+}
+
+func get(uri string, handler handler) {
+	handlers[uri] = handler
+}
+
+func resp(conn net.Conn, body []byte) {
+	content := fmt.Sprintf("HTTP/1.1 200 OK\r\n\r\n%s", string(body))
+	conn.Write([]byte(content))
+}
+
+```
+
+
+
+### 性能测试
+
+使用ab做一个简单的性能测试，不是很严谨，但足够说明问题
+
+对比图
+
+|                     | server   | gin server | beego server |
+| ------------------- | -------- | ---------- | ------------ |
+| Requests per second | 30682.19 | 33626.22   | 32875.27     |
+
+#### 自实现的web server
+
+```shell
+langwan@Langwan-Mini meterun % ab -n 10000 -c 20 http://127.0.0.1:8100/profile
+This is ApacheBench, Version 2.3 <$Revision: 1879490 $>
+Copyright 1996 Adam Twiss, Zeus Technology Ltd, http://www.zeustech.net/
+Licensed to The Apache Software Foundation, http://www.apache.org/
+
+Benchmarking 127.0.0.1 (be patient)
+Completed 1000 requests
+Completed 2000 requests
+Completed 3000 requests
+Completed 4000 requests
+Completed 5000 requests
+Completed 6000 requests
+Completed 7000 requests
+Completed 8000 requests
+Completed 9000 requests
+Completed 10000 requests
+Finished 10000 requests
+
+
+Server Software:
+Server Hostname:        127.0.0.1
+Server Port:            8100
+
+Document Path:          /profile
+Document Length:        110 bytes
+
+Concurrency Level:      20
+Time taken for tests:   0.326 seconds
+Complete requests:      10000
+Failed requests:        0
+Total transferred:      2950000 bytes
+HTML transferred:       1100000 bytes
+Requests per second:    30682.19 [#/sec] (mean)
+Time per request:       0.652 [ms] (mean)
+Time per request:       0.033 [ms] (mean, across all concurrent requests)
+Transfer rate:          8839.11 [Kbytes/sec] received
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    0   0.1      0       2
+Processing:     0    0   0.3      0       9
+Waiting:        0    0   0.3      0       9
+Total:          0    1   0.4      1       9
+
+Percentage of the requests served within a certain time (ms)
+  50%      1
+  66%      1
+  75%      1
+  80%      1
+  90%      1
+  95%      1
+  98%      1
+  99%      2
+ 100%      9 (longest request)
+```
+
+#### gin web server
+
+```shell
+langwan@Langwan-Mini meterun % ab -n 10000 -c 20 http://127.0.0.1:8100/profile
+This is ApacheBench, Version 2.3 <$Revision: 1879490 $>
+Copyright 1996 Adam Twiss, Zeus Technology Ltd, http://www.zeustech.net/
+Licensed to The Apache Software Foundation, http://www.apache.org/
+
+Benchmarking 127.0.0.1 (be patient)
+Completed 1000 requests
+Completed 2000 requests
+Completed 3000 requests
+Completed 4000 requests
+Completed 5000 requests
+Completed 6000 requests
+Completed 7000 requests
+Completed 8000 requests
+Completed 9000 requests
+Completed 10000 requests
+Finished 10000 requests
+
+
+Server Software:
+Server Hostname:        127.0.0.1
+Server Port:            8100
+
+Document Path:          /profile
+Document Length:        110 bytes
+
+Concurrency Level:      20
+Time taken for tests:   0.297 seconds
+Complete requests:      10000
+Failed requests:        0
+Total transferred:      2950000 bytes
+HTML transferred:       1100000 bytes
+Requests per second:    33626.22 [#/sec] (mean)
+Time per request:       0.595 [ms] (mean)
+Time per request:       0.030 [ms] (mean, across all concurrent requests)
+Transfer rate:          9687.24 [Kbytes/sec] received
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    0   0.1      0       1
+Processing:     0    0   0.2      0       3
+Waiting:        0    0   0.2      0       3
+Total:          0    1   0.2      1       3
+
+Percentage of the requests served within a certain time (ms)
+  50%      1
+  66%      1
+  75%      1
+  80%      1
+  90%      1
+  95%      1
+  98%      1
+  99%      1
+ 100%      3 (longest request)
+```
+
+#### beego web server
+
+```shell
+langwan@Langwan-Mini meterun % ab -n 10000 -c 20 http://127.0.0.1:8100/profile
+This is ApacheBench, Version 2.3 <$Revision: 1879490 $>
+Copyright 1996 Adam Twiss, Zeus Technology Ltd, http://www.zeustech.net/
+Licensed to The Apache Software Foundation, http://www.apache.org/
+
+Benchmarking 127.0.0.1 (be patient)
+Completed 1000 requests
+Completed 2000 requests
+Completed 3000 requests
+Completed 4000 requests
+Completed 5000 requests
+Completed 6000 requests
+Completed 7000 requests
+Completed 8000 requests
+Completed 9000 requests
+Completed 10000 requests
+Finished 10000 requests
+
+
+Server Software:
+Server Hostname:        127.0.0.1
+Server Port:            8100
+
+Document Path:          /profile
+Document Length:        110 bytes
+
+Concurrency Level:      20
+Time taken for tests:   0.304 seconds
+Complete requests:      10000
+Failed requests:        0
+Total transferred:      2270000 bytes
+HTML transferred:       1100000 bytes
+Requests per second:    32875.27 [#/sec] (mean)
+Time per request:       0.608 [ms] (mean)
+Time per request:       0.030 [ms] (mean, across all concurrent requests)
+Transfer rate:          7287.78 [Kbytes/sec] received
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    0   0.1      0       1
+Processing:     0    0   0.2      0       7
+Waiting:        0    0   0.2      0       7
+Total:          0    1   0.3      1       8
+
+Percentage of the requests served within a certain time (ms)
+  50%      1
+  66%      1
+  75%      1
+  80%      1
+  90%      1
+  95%      1
+  98%      1
+  99%      1
+ 100%      8 (longest request)
 ```
