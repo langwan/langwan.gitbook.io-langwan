@@ -33,7 +33,6 @@ func TestGet(t *testing.T) {
 func TestRun(t *testing.T) {
    var concurrency int64 = 20
    var requests int64 = 10000
-   RequestStart(concurrency, 60*time.Second)
    Run(func(id int64) bool {
       return true
    }, concurrency, requests, "测试函数执行效率", true)
@@ -49,6 +48,10 @@ func TestRun(t *testing.T) {
 * **requests** 请求数
 * **title** 报告标题
 * **save** 报告是否存为文件
+
+返回值
+
+返回true表示成功
 
 ### 测试报告
 
@@ -82,10 +85,10 @@ type request struct {
 
 ```go
 rem := requests % concurrency
-requestsPerWorker := (requests - rem) / concurrency
+requestsPerWorkers := (requests - rem) / concurrency
 ```
 
-#### 启动携程池
+#### 启动协程池
 
 ```go
 go func() {
